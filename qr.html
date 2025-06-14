@@ -2,26 +2,94 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mã QR</title>
-  <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tạo QR Code Động</title>
   <style>
-    body { font-family: sans-serif; text-align: center; padding: 50px; background: #f9fafb; }
-    #qrcode { margin-top: 20px; }
+    body { font-family: Arial; padding: 20px; background: #f9f9f9; }
+    input, select, button, textarea { padding: 8px; margin: 6px 0; width: 100%; }
+    #qrcode-img { margin-top: 20px; max-width: 100%; border: 1px solid #ccc; }
+    .section { margin-top: 30px; padding: 10px; background: #fff; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+    code { background: #eee; padding: 2px 4px; border-radius: 4px; }
   </style>
 </head>
 <body>
-  <h2>Mã QR động</h2>
-  <div id="qrcode"></div>
-  <script>
-    const qrcodeDiv = document.getElementById('qrcode');
-    const params = new URLSearchParams(window.location.search);
-    const content = params.get('content') || 'Hello world';
-    new QRCode(qrcodeDiv, {
-      text: content,
-      width: 200,
-      height: 200
-    });
-  </script>
+
+<h2>🔳 Tạo mã QR động</h2>
+
+<div class="section">
+  <label for="data-input">Nhập nội dung để tạo QR Code:</label>
+  <textarea id="data-input" rows="4" placeholder="Nhập văn bản, liên kết, số điện thoại, email..."></textarea>
+
+  <button onclick="generateQRCode()">🔄 Tạo mã QR</button>
+
+  <img id="qrcode-img" src="" alt="QR Code sẽ hiển thị ở đây" />
+
+  <button onclick="downloadQR()">⬇️ Tải ảnh QR về</button>
+</div>
+
+<div class="section">
+  <h3>🌐 Link API QR Code động</h3>
+  <p>Dưới đây là link để nhúng ảnh QR (API):</p>
+  <input type="text" id="qr-link" readonly />
+
+  <button onclick="copyLink()">📋 Sao chép link API</button>
+</div>
+
+<div class="section">
+  <h3>📘 Hướng dẫn sử dụng API QR động</h3>
+  <p>Bạn có thể dùng API như sau:</p>
+  <pre><code>https://script.google.com/macros/s/AKfycbxDYxE0vVPLw2cGJG3L8K_BellsK0-atwKcN-8bt4u4SbUku-Zy5MtbpcMeSoaQfwEL/exec?text=YOUR_TEXT</code></pre>
+  <ul>
+    <li><strong>Thay YOUR_TEXT</strong> bằng nội dung cần mã hóa (phải được encodeURIComponent).</li>
+    <li>Có thể dùng trong thẻ &lt;img&gt;, chatbot, Google Sheets, webhook...</li>
+    <li>Ví dụ sử dụng:
+      <br />
+      <code>&lt;img src="https://script.google.com/macros/s/AKfycb.../exec?text=Hello" /&gt;</code>
+    </li>
+  </ul>
+</div>
+
+<script>
+  const webAppBaseURL = "https://script.google.com/macros/s/AKfycb_yourScriptID/exec";
+
+  function generateQRCode() {
+    const text = document.getElementById("data-input").value.trim();
+    if (!text) {
+      alert("Vui lòng nhập nội dung!");
+      return;
+    }
+
+    const encoded = encodeURIComponent(text);
+    const qrURL = `${webAppBaseURL}?text=${encoded}`;
+
+    document.getElementById("qrcode-img").src = qrURL;
+    document.getElementById("qr-link").value = qrURL;
+  }
+
+  function downloadQR() {
+    const img = document.getElementById("qrcode-img");
+    if (!img.src) {
+      alert("Chưa có ảnh QR để tải!");
+      return;
+    }
+
+    const link = document.createElement("a");
+    link.href = img.src;
+    link.download = "qrcode.png";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  function copyLink() {
+    const linkInput = document.getElementById("qr-link");
+    linkInput.select();
+    linkInput.setSelectionRange(0, 99999);
+    document.execCommand("copy");
+    alert("Đã sao chép link API QR!");
+  }
+</script>
+
 </body>
 </html>
+
