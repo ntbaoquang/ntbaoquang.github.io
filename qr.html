@@ -3,24 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Trình Tạo Mã QR</title>
+  <title>QR Code Generator</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
-
-  <!-- Redirect nếu có content -->
-  <script>
-    (function () {
-      const params = new URLSearchParams(window.location.search);
-      const content = params.get('content');
-
-      if (content) {
-        const encodedContent = encodeURIComponent(content);
-        const webAppUrl = 'https://script.google.com/macros/s/AKfycbxDYxE0vVPLw2cGJG3L8K_BellsK0-atwKcN-8bt4u4SbUku-Zy5MtbpcMeSoaQfwEL/exec';
-        window.location.href = `${webAppUrl}?content=${encodedContent}&raw=1`;
-      }
-    })();
-  </script>
-
   <style>
     body {
       font-family: 'Inter', sans-serif;
@@ -56,7 +41,7 @@
       color: #374151;
     }
 
-    input[type="text"] {
+    input[type="text"], input[type="number"] {
       width: 100%;
       padding: 12px;
       margin-top: 8px;
@@ -92,26 +77,12 @@
       margin-bottom: 16px;
     }
 
-    #apiLink {
-      display: inline-block;
-      margin-bottom: 8px;
-      color: #1d4ed8;
-      word-break: break-word;
-    }
-
-    #copyBtn {
+    #downloadBtn {
       background-color: #10b981;
-      margin-top: 8px;
     }
 
-    #copyBtn:hover {
+    #downloadBtn:hover {
       background-color: #059669;
-    }
-
-    #copyMsg {
-      color: #16a34a;
-      margin-top: 6px;
-      display: none;
     }
 
     #instructions {
@@ -121,11 +92,6 @@
       border-radius: 12px;
       font-size: 14px;
       color: #374151;
-    }
-
-    #instructions h3 {
-      font-size: 18px;
-      margin-bottom: 10px;
     }
 
     pre {
@@ -138,79 +104,82 @@
 </head>
 <body>
   <div class="container">
-    <h2>Tạo Mã QR Nhanh</h2>
+    <h2>Tạo Mã QR</h2>
 
     <form id="qrForm">
-      <label for="content">Nội dung (URL hoặc văn bản):</label>
-      <input type="text" id="content" name="content" placeholder="Ví dụ: https://tuoitre.vn" required />
+      <label for="content">Nội dung:</label>
+      <input type="text" id="content" name="content" placeholder="Ví dụ: https://example.com" required />
+
+      <label for="size">Kích thước (px):</label>
+      <input type="number" id="size" name="size" min="100" max="1000" value="300" />
+
       <button type="submit">Tạo QR Code</button>
     </form>
 
     <div id="qrcode-container">
       <div id="qrcode"></div>
-      <a id="apiLink" href="#" target="_blank" rel="noopener noreferrer">Link API trả QR Code</a><br />
-      <button id="copyBtn">Copy link API</button>
-      <p id="copyMsg">Đã copy vào bộ nhớ tạm!</p>
+      <a id="downloadBtn" href="#" download="qrcode.png">Tải ảnh QR</a>
     </div>
 
     <div id="instructions">
-      <h3>Hướng dẫn sử dụng API QR</h3>
-      <p>Bạn có thể tạo ảnh QR từ nội dung bất kỳ bằng cách chèn nội dung vào URL sau:</p>
-      <code>
-        https://ntbaoquang.github.io/qr.html?content=GIÁ_TRỊ_CỦA_BẠN
-      </code>
-      <p>Ví dụ:</p>
-      <pre>https://ntbaoquang.github.io/qr.html?content=https://tuoitre.vn</pre>
-      <p>Link này sẽ trả về ảnh QR tương ứng, có thể dùng để chèn vào email, website, tài liệu,...</p>
+      <h3>Hướng dẫn</h3>
+      <p>Bạn có thể tạo ảnh QR từ nội dung bất kỳ bằng cách truy cập liên kết:</p>
+      <pre>https://ntbaoquang.github.io/qr.html?content=GIÁ_TRỊ_CỦA_BẠN</pre>
+      <p>Bạn cũng có thể thêm tham số <code>size</code> để đổi kích thước ảnh QR:</p>
+      <pre>https://ntbaoquang.github.io/qr.html?content=Hello+World&amp;size=400</pre>
     </div>
   </div>
 
   <script>
     const form = document.getElementById('qrForm');
     const contentInput = document.getElementById('content');
+    const sizeInput = document.getElementById('size');
     const qrcodeContainer = document.getElementById('qrcode-container');
     const qrcodeDiv = document.getElementById('qrcode');
-    const apiLink = document.getElementById('apiLink');
-    const copyBtn = document.getElementById('copyBtn');
-    const copyMsg = document.getElementById('copyMsg');
+    const downloadBtn = document.getElementById('downloadBtn');
 
     function clearQrCode() {
       qrcodeDiv.innerHTML = '';
     }
 
-    function createQrCode(text) {
+    function createQrCode(text, size) {
       clearQrCode();
-      new QRCode(qrcodeDiv, {
+      const qr = new QRCode(qrcodeDiv, {
         text: text,
-        width: 200,
-        height: 200,
+        width: size,
+        height: size
       });
+
+      setTimeout(() => {
+        const img = qrcodeDiv.querySelector('img') || qrcodeDiv.querySelector('canvas');
+        if (img && img.toDataURL) {
+          downloadBtn.href = img.toDataURL('image/png');
+        } else if (img && img.src) {
+          downloadBtn.href = img.src;
+        }
+      }, 300);
+
+      qrcodeContainer.style.display = 'block';
     }
 
     form.addEventListener('submit', e => {
       e.preventDefault();
       const content = contentInput.value.trim();
+      const size = parseInt(sizeInput.value) || 300;
       if (!content) return;
-
-      createQrCode(content);
-
-      const baseApiUrl = 'https://ntbaoquang.github.io/qr.html';
-      const url = baseApiUrl + '?content=' + encodeURIComponent(content);
-      apiLink.href = url;
-      apiLink.textContent = url;
-
-      qrcodeContainer.style.display = 'block';
-      copyMsg.style.display = 'none';
+      createQrCode(content, size);
     });
 
-    copyBtn.addEventListener('click', () => {
-      const link = apiLink.href;
-      navigator.clipboard.writeText(link).then(() => {
-        copyMsg.style.display = 'block';
-        setTimeout(() => copyMsg.style.display = 'none', 2000);
-      }).catch(() => {
-        alert('Không thể copy, vui lòng sao chép thủ công.');
-      });
+    // Tự động tạo QR nếu có tham số ?content=...
+    window.addEventListener('DOMContentLoaded', () => {
+      const params = new URLSearchParams(window.location.search);
+      const content = params.get('content');
+      const size = parseInt(params.get('size')) || 300;
+      if (content) {
+        contentInput.value = content;
+        sizeInput.value = size;
+        createQrCode(content, size);
+      }
     });
   </script>
 </body>
