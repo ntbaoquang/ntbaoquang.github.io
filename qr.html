@@ -123,10 +123,19 @@
 
     <div id="instructions">
       <h3>Hướng dẫn</h3>
-      <p>Bạn có thể tạo ảnh QR từ nội dung bất kỳ bằng cách truy cập liên kết:</p>
-      <pre>https://ntbaoquang.github.io/qr.html?content=GIÁ_TRỊ_CỦA_BẠN</pre>
-      <p>Bạn cũng có thể thêm tham số <code>size</code> để đổi kích thước ảnh QR:</p>
+      <p><strong>1. Dùng trực tiếp trên trình duyệt:</strong></p>
+      <p>Bạn có thể tạo ảnh QR từ nội dung bất kỳ bằng cách truy cập:</p>
+      <pre>https://ntbaoquang.github.io/qr.html?content=GIÁ_TRỊ</pre>
+      <p>Thêm <code>size</code> nếu muốn:</p>
       <pre>https://ntbaoquang.github.io/qr.html?content=Hello+World&amp;size=400</pre>
+
+      <hr>
+
+      <p><strong>2. Dùng API Cloudflare Workers (trả về ảnh PNG):</strong></p>
+      <p>Truy cập liên kết để nhận trực tiếp ảnh PNG:</p>
+      <pre>https://qr-api.appsheetcanh.workers.dev/?content=GIÁ_TRỊ</pre>
+      <p>Thêm <code>&size=400</code> nếu muốn đổi kích thước (mặc định: 300):</p>
+      <pre>https://qr-api.appsheetcanh.workers.dev/?content=Hello+World&amp;size=400</pre>
     </div>
   </div>
 
@@ -170,7 +179,6 @@
       createQrCode(content, size);
     });
 
-    // Tự động tạo QR nếu có tham số ?content=...
     window.addEventListener('DOMContentLoaded', () => {
       const params = new URLSearchParams(window.location.search);
       const content = params.get('content');
