@@ -2,103 +2,118 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Trình Tạo Mã QR Tích Hợp</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>QR Code Generator</title>
+  <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; background: #f3f4f6; margin:0; padding:0;
-           display:flex; justify-content:center; align-items:flex-start; min-height:100vh; }
-    .container { background:#fff; margin-top:40px; padding:30px; border-radius:12px;
-                 box-shadow:0 4px 12px rgba(0,0,0,0.1); max-width:500px; width:90%; }
-    h2 { margin-top:0; text-align:center; }
-    input[type="text"] { width:100%; padding:10px; margin:10px 0; border:1px solid #ccc; border-radius:6px;}
-    button { width:100%; padding:12px; margin:8px 0; border:none; border-radius:6px;
-             font-size:16px; cursor:pointer; color:#fff; }
-    button.primary { background-color:#2563eb; }
-    button.primary:hover { background-color:#1e40af; }
-    button.success { background-color:#10b981; }
-    button.success:hover { background-color:#059669; }
-    #qrcode-container { display:none; text-align:center; margin-top:20px; }
-    #qrcode-img { max-width:100%; border:1px solid #ddd; }
-    #apiLink { display:block; margin:12px 0; word-break:break-all; color:#2563eb; }
-    #copyMsg { color:#16a34a; display:none; }
-    #instructions { margin-top:30px; background:#f9fafb; padding:20px; border-radius:8px; font-size:14px; }
-    pre { background:#e5e7eb; padding:8px; overflow-x:auto; border-radius:4px; }
+    body {
+      font-family: sans-serif;
+      background: #f3f4f6;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .container {
+      background: white;
+      padding: 24px;
+      border-radius: 12px;
+      width: 100%;
+      max-width: 500px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    input, button {
+      width: 100%;
+      margin-top: 12px;
+      padding: 12px;
+      font-size: 16px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    button {
+      background-color: #2563eb;
+      color: white;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #1d4ed8;
+    }
+    #qrcode {
+      margin-top: 20px;
+      text-align: center;
+    }
+    .link, .download {
+      background-color: #10b981;
+      margin-top: 10px;
+    }
+    .link:hover {
+      background-color: #059669;
+    }
+    .download {
+      background-color: #059669;
+    }
+    .download:hover {
+      background-color: #047857;
+    }
+    #apiUrl {
+      margin-top: 12px;
+      font-size: 14px;
+      color: #2563eb;
+      word-break: break-word;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <h2>📷 Tạo QR Code (Server-side)</h2>
-    <input type="text" id="content" placeholder="Nhập nội dung (URL hoặc văn bản)" />
-    <button class="primary" id="generateBtn">Tạo QR Code</button>
-    <div id="qrcode-container">
-      <img id="qrcode-img" src="" alt="QR Code" />
-      <a id="apiLink" href="#" target="_blank" rel="noopener noreferrer"></a>
-      <button class="success" id="copyBtn">Copy link API</button>
-      <button class="success" id="downloadBtn">Tải ảnh QR về</button>
-      <p id="copyMsg">✅ Đã copy vào bộ nhớ!</p>
-    </div>
-    <div id="instructions">
-      <h3>🔧 Hướng dẫn</h3>
-      <ol>
-        <li>Nhập nội dung vào ô trên, ví dụ: <code>https://example.com</code> hoặc văn bản.</li>
-        <li>Nhấn <strong>Tạo QR Code</strong>.</li>
-        <li>Hệ thống sẽ gọi Web App và hiển thị ảnh QR.</li>
-        <li>Sao chép link API hoặc bấm <strong>Tải ảnh QR về</strong> để sử dụng.</li>
-      </ol>
-      <p><strong>Ví dụ link API:</strong></p>
-      <pre id="apiExample"></pre>
-    </div>
+    <h2>📸 Tạo QR Code (Client-side)</h2>
+    <input type="text" id="content" placeholder="Nhập URL hoặc văn bản..." />
+    <button onclick="generateQR()">Tạo QR Code</button>
+
+    <div id="qrcode"></div>
+    <p id="apiUrl"></p>
+    <button class="link" onclick="copyLink()">Copy link API</button>
+    <button class="download" onclick="downloadQR()">Tải ảnh QR về</button>
   </div>
 
   <script>
-    const webAppBase = 'https://script.google.com/macros/s/AKfycbxDYxE0vVPLw2cGJG3L8K_BellsK0-atwKcN-8bt4u4SbUku-Zy5MtbpcMeSoaQfwEL/exec'; // từ GAS template
+    const webAppBase = 'https://script.google.com/macros/s/AKfycbxDYxE0vVPLw2cGJG3L8K_BellsK0-atwKcN-8bt4u4SbUku-Zy5MtbpcMeSoaQfwEL/exec'; // Thay bằng URL thật của bạn
 
-    const contentInput = document.getElementById('content');
-    const generateBtn = document.getElementById('generateBtn');
-    const qrcodeContainer = document.getElementById('qrcode-container');
-    const qrcodeImg = document.getElementById('qrcode-img');
-    const apiLink = document.getElementById('apiLink');
-    const copyBtn = document.getElementById('copyBtn');
-    const downloadBtn = document.getElementById('downloadBtn');
-    const copyMsg = document.getElementById('copyMsg');
-    const apiExample = document.getElementById('apiExample');
+    function generateQR() {
+      const content = document.getElementById('content').value.trim();
+      if (!content) return;
 
-    function buildApiUrl(text) {
-      return `${webAppBase}?content=${encodeURIComponent(text)}&raw=1`;
+      const qrcodeContainer = document.getElementById('qrcode');
+      qrcodeContainer.innerHTML = ''; // clear cũ
+
+      const qr = new QRCode(qrcodeContainer, {
+        text: content,
+        width: 256,
+        height: 256,
+      });
+
+      const apiLink = `${webAppBase}?content=${encodeURIComponent(content)}&raw=1`;
+      document.getElementById('apiUrl').innerText = apiLink;
+
+      // Gửi log đến Web App nếu muốn
+      fetch(`${webAppBase}?api=1&content=${encodeURIComponent(content)}`)
+        .then(r => r.text()).catch(e => console.log('Log lỗi:', e));
     }
 
-    generateBtn.addEventListener('click', () => {
-      const text = contentInput.value.trim();
-      if (!text) return alert('Vui lòng nhập nội dung!');
-      const url = buildApiUrl(text);
-      qrcodeImg.src = url;
-      apiLink.href = url;
-      apiLink.textContent = url;
-      apiExample.textContent = url;
-      qrcodeContainer.style.display = 'block';
-      copyMsg.style.display = 'none';
-    });
+    function copyLink() {
+      const text = document.getElementById('apiUrl').innerText;
+      navigator.clipboard.writeText(text).then(() => alert('Đã copy link API!'));
+    }
 
-    copyBtn.addEventListener('click', () => {
-      navigator.clipboard.writeText(apiLink.href)
-        .then(() => {
-          copyMsg.style.display = 'block';
-          setTimeout(() => copyMsg.style.display = 'none', 2000);
-        })
-        .catch(() => alert('Không thể copy, xin vui lòng copy thủ công.'));
-    });
-
-    downloadBtn.addEventListener('click', () => {
-      if (!qrcodeImg.src) return alert('Chưa có ảnh để tải!');
-      const a = document.createElement('a');
-      a.href = qrcodeImg.src;
-      a.download = 'qrcode.png';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    });
+    function downloadQR() {
+      const img = document.querySelector('#qrcode img');
+      if (!img) return alert('Hãy tạo mã QR trước');
+      const link = document.createElement('a');
+      link.href = img.src;
+      link.download = 'qr-code.png';
+      link.click();
+    }
   </script>
 </body>
 </html>
-
-
