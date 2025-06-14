@@ -19,7 +19,7 @@
       padding: 24px;
       border-radius: 12px;
       width: 100%;
-      max-width: 500px;
+      max-width: 600px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
     input, button {
@@ -63,47 +63,85 @@
       color: #2563eb;
       word-break: break-word;
     }
+    .instructions {
+      margin-top: 30px;
+      background: #fef3c7;
+      padding: 16px;
+      border-radius: 8px;
+      border-left: 6px solid #f59e0b;
+      font-size: 14px;
+    }
+    .instructions code {
+      background: #f3f4f6;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 13px;
+      display: block;
+      margin: 4px 0;
+      word-break: break-word;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <h2>📸 Tạo QR Code (Client-side)</h2>
+    <h2>📸 Tạo QR Code</h2>
     <input type="text" id="content" placeholder="Nhập URL hoặc văn bản..." />
     <button onclick="generateQR()">Tạo QR Code</button>
 
     <div id="qrcode"></div>
     <p id="apiUrl"></p>
-    <button class="link" onclick="copyLink()">Copy link API</button>
+    <button class="link" onclick="copyLink()">Copy link trang này</button>
     <button class="download" onclick="downloadQR()">Tải ảnh QR về</button>
+
+    <div class="instructions">
+  <strong>💡 Hướng dẫn tạo URL động để nhận ảnh QR Code:</strong>
+  <p>Bạn có thể tạo ảnh QR từ nội dung bất kỳ bằng cách chèn nội dung vào URL sau:</p>
+  <code>
+    https://ntbaoquang.github.io/qr.html?content=GIÁ_TRỊ_CỦA_BẠN
+  </code>
+  <p>Ví dụ:</p>
+  <code>
+    https://ntbaoquang.github.io/qr.html?content=https%3A%2F%2Fexample.com
+  </code>
+  <p>📎 Dán URL này vào trình duyệt, gửi cho bạn bè, hoặc nhúng vào trang web để hiển thị mã QR.</p>
+  <p>⚙️ Trang sẽ tự động tạo ảnh QR từ nội dung trong tham số <code>content</code>.</p>
+</div>
+
   </div>
 
   <script>
-    const webAppBase = 'https://script.google.com/macros/s/AKfycbxDYxE0vVPLw2cGJG3L8K_BellsK0-atwKcN-8bt4u4SbUku-Zy5MtbpcMeSoaQfwEL/exec'; // Thay bằng URL thật của bạn
+    const webAppBase = 'https://script.google.com/macros/s/AKfycbxDYxE0vVPLw2cGJG3L8K_BellsK0-atwKcN-8bt4u4SbUku-Zy5MtbpcMeSoaQfwEL/exec';
 
-    function generateQR() {
-      const content = document.getElementById('content').value.trim();
+    function getQueryParam(name) {
+      const params = new URLSearchParams(window.location.search);
+      return params.get(name);
+    }
+
+    function generateQR(initial = false) {
+      const input = document.getElementById('content');
+      const content = input.value.trim();
       if (!content) return;
 
-      const qrcodeContainer = document.getElementById('qrcode');
-      qrcodeContainer.innerHTML = ''; // clear cũ
+      const qrContainer = document.getElementById('qrcode');
+      qrContainer.innerHTML = ''; // clear cũ
 
-      const qr = new QRCode(qrcodeContainer, {
+      new QRCode(qrContainer, {
         text: content,
         width: 256,
         height: 256,
       });
 
-      const apiLink = `${webAppBase}?content=${encodeURIComponent(content)}&raw=1`;
-      document.getElementById('apiUrl').innerText = apiLink;
+      const currentUrl = `${location.origin}${location.pathname}?content=${encodeURIComponent(content)}`;
+      document.getElementById('apiUrl').innerText = currentUrl;
 
-      // Gửi log đến Web App nếu muốn
-      fetch(`${webAppBase}?api=1&content=${encodeURIComponent(content)}`)
-        .then(r => r.text()).catch(e => console.log('Log lỗi:', e));
+      if (!initial) {
+        console.log("QR created for:", content);
+      }
     }
 
     function copyLink() {
       const text = document.getElementById('apiUrl').innerText;
-      navigator.clipboard.writeText(text).then(() => alert('Đã copy link API!'));
+      navigator.clipboard.writeText(text).then(() => alert('Đã copy link!'));
     }
 
     function downloadQR() {
@@ -114,6 +152,15 @@
       link.download = 'qr-code.png';
       link.click();
     }
+
+    // Khi trang được load với ?content=...
+    window.onload = () => {
+      const param = getQueryParam('content');
+      if (param) {
+        document.getElementById('content').value = param;
+        generateQR(true);
+      }
+    };
   </script>
 </body>
 </html>
