@@ -128,7 +128,6 @@ function initializeSalesModule(app) {
             return payload + crc;
         };
         
-// Thay thế toàn bộ hàm generateQrCodeDataURL bằng đoạn này:
 const generateQrCodeDataURL = (payload) => {
   return new Promise((resolve, reject) => {
     try {
