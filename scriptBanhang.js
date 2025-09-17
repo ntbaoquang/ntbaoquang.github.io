@@ -128,105 +128,103 @@ function initializeSalesModule(app) {
             return payload + crc;
         };
         
-const generateQrCodeDataURL = (payload) => {
-  return new Promise((resolve, reject) => {
-    try {
-      if (typeof QRCode === 'undefined') {
-        return reject(new Error('Thư viện QRCode chưa được tải.'));
-      }
-
-      const opts = { width: 220, margin: 1, errorCorrectionLevel: 'H' };
-
-      // 1) Nếu thư viện kiểu "qrcode" (npm) với toDataURL -> dùng luôn (Promise hoặc callback)
-      if (typeof QRCode.toDataURL === 'function') {
-        try {
-          const maybePromise = QRCode.toDataURL(payload, opts);
-          if (maybePromise && typeof maybePromise.then === 'function') {
-            maybePromise.then(url => resolve(url)).catch(err => reject(err));
-            return;
-          } else {
-            // callback form
-            QRCode.toDataURL(payload, opts, (err, url) => {
-              if (err) return reject(err);
-              resolve(url);
-            });
-            return;
-          }
-        } catch (e) {
-          // nếu thất bại thì tiếp tục xuống các fallback
-          console.warn('QRCode.toDataURL lỗi, thử fallback:', e);
-        }
-      }
-
-      // 2) Nếu thư viện có toCanvas -> render lên canvas rồi lấy dataURL
-      if (typeof QRCode.toCanvas === 'function') {
-        try {
-          const canvas = document.createElement('canvas');
-          QRCode.toCanvas(canvas, payload, opts, (err) => {
-            if (err) return reject(err);
-            try { resolve(canvas.toDataURL('image/png')); } catch (err2) { reject(err2); }
-          });
-          return;
-        } catch (e) {
-          console.warn('QRCode.toCanvas lỗi, thử fallback:', e);
-        }
-      }
-
-      // 3) Fallback cho qrcodejs (constructor API: new QRCode(...))
-      // Hỗ trợ cả trường hợp QRCode là hàm constructor hoặc object có CorrectLevel
-      if (typeof QRCode === 'function' || (typeof QRCode === 'object' && QRCode.CorrectLevel)) {
-        const tempDiv = document.createElement('div');
-        tempDiv.style.position = 'absolute';
-        tempDiv.style.left = '-9999px';
-        document.body.appendChild(tempDiv);
-        tempDiv.innerHTML = '';
-
-        try {
-          // một vài bản qrcodejs dùng option correctLevel, một vài bản khác chấp nhận mặc định
-          new QRCode(tempDiv, {
-            text: payload,
-            width: 220,
-            height: 220,
-            correctLevel: (QRCode.CorrectLevel ? QRCode.CorrectLevel.H : undefined)
-          });
-        } catch (errCreate) {
-          // fallback: thử khởi tạo bằng cách truyền payload (tùy bản lib)
-          try {
-            new QRCode(tempDiv, payload);
-          } catch (err2) {
-            document.body.removeChild(tempDiv);
-            return reject(err2);
-          }
-        }
-
-        // đợi render xong rồi lấy img/canvas
-        setTimeout(() => {
-          try {
-            let dataURL = '';
-            const img = tempDiv.querySelector('img');
-            if (img && img.src) dataURL = img.src;
-            else {
-              const canvas = tempDiv.querySelector('canvas');
-              if (canvas) dataURL = canvas.toDataURL('image/png');
+        const generateQrCodeDataURL = (payload) => {
+          return new Promise((resolve, reject) => {
+            try {
+              if (typeof QRCode === 'undefined') {
+                return reject(new Error('Thư viện QRCode chưa được tải.'));
+              }
+        
+              const opts = { width: 220, margin: 1, errorCorrectionLevel: 'H' };
+        
+              // 1) Handle `qrcode` library (from npm) which has a `toDataURL` method.
+              // This method can either return a Promise or use a callback.
+              if (typeof QRCode.toDataURL === 'function') {
+                try {
+                  const maybePromise = QRCode.toDataURL(payload, opts);
+                  if (maybePromise && typeof maybePromise.then === 'function') {
+                    maybePromise.then(url => resolve(url)).catch(err => reject(err));
+                    return;
+                  } else {
+                    // Fallback to callback style for older versions
+                    QRCode.toDataURL(payload, opts, (err, url) => {
+                      if (err) return reject(err);
+                      resolve(url);
+                    });
+                    return;
+                  }
+                } catch (e) {
+                  console.warn('QRCode.toDataURL failed, trying other methods:', e);
+                }
+              }
+        
+              // 2) Handle libraries that have a `toCanvas` method.
+              if (typeof QRCode.toCanvas === 'function') {
+                try {
+                  const canvas = document.createElement('canvas');
+                  QRCode.toCanvas(canvas, payload, opts, (err) => {
+                    if (err) return reject(err);
+                    try { resolve(canvas.toDataURL('image/png')); } catch (err2) { reject(err2); }
+                  });
+                  return;
+                } catch (e) {
+                  console.warn('QRCode.toCanvas failed, trying other methods:', e);
+                }
+              }
+        
+              // 3) Handle `qrcodejs` library, which uses a constructor API.
+              if (typeof QRCode === 'function' || (typeof QRCode === 'object' && QRCode.CorrectLevel)) {
+                const tempDiv = document.createElement('div');
+                tempDiv.style.position = 'absolute';
+                tempDiv.style.left = '-9999px';
+                document.body.appendChild(tempDiv);
+        
+                try {
+                  new QRCode(tempDiv, {
+                    text: payload,
+                    width: 220,
+                    height: 220,
+                    correctLevel: (QRCode.CorrectLevel ? QRCode.CorrectLevel.H : undefined)
+                  });
+                } catch (errCreate) {
+                  // Fallback for versions that take the payload string directly
+                  try {
+                    new QRCode(tempDiv, payload);
+                  } catch (err2) {
+                    document.body.removeChild(tempDiv);
+                    return reject(err2);
+                  }
+                }
+        
+                // Wait for the library to render the QR code (often asynchronously)
+                setTimeout(() => {
+                  try {
+                    let dataURL = '';
+                    const img = tempDiv.querySelector('img');
+                    if (img && img.src) {
+                        dataURL = img.src;
+                    } else {
+                      const canvas = tempDiv.querySelector('canvas');
+                      if (canvas) dataURL = canvas.toDataURL('image/png');
+                    }
+                    document.body.removeChild(tempDiv);
+                    if (dataURL) return resolve(dataURL);
+                    return reject(new Error('Could not extract dataURL from the generated QR code.'));
+                  } catch (e) {
+                    try { document.body.removeChild(tempDiv); } catch(_) {}
+                    return reject(e);
+                  }
+                }, 300); // 300ms is a safe timeout for rendering
+                return;
+              }
+        
+              // If no compatible API was found
+              return reject(new Error('The loaded QRCode library is not compatible.'));
+            } catch (err) {
+              return reject(err);
             }
-            document.body.removeChild(tempDiv);
-            if (dataURL) return resolve(dataURL);
-            return reject(new Error('Không thể trích xuất dataURL của mã QR.'));
-          } catch (e) {
-            try { document.body.removeChild(tempDiv); } catch(_) {}
-            return reject(e);
-          }
-        }, 300); // 300ms đủ cho hầu hết trường hợp
-        return;
-      }
-
-      // Nếu không có API nào hỗ trợ
-      return reject(new Error('Thư viện QRCode hiện tại không được hỗ trợ bởi hàm này.'));
-    } catch (err) {
-      return reject(err);
-    }
-  });
-};
+          });
+        };
 
 
         const printReceipt = async (printData, settings) => {
